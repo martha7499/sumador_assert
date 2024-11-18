@@ -1,0 +1,225 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: civestav
+// Engineer: Martha Guadalupe Macías Martínez
+// 
+// Create Date: 12.11.2024 22:37:07
+// Design Name: sumador con acarreo
+// Module Name: tb_sumador_carry
+// Project Name: sumador
+// Target Devices: ALTERA
+// Tool Versions: ~~~
+// Description: This is a testbench to the adder, where se assignate some asertion to define the signal
+// 
+// Dependencies: ~~~
+// 
+// Revision: 1
+// Revision 0.01 - File Created
+// Additional Comments: ~~~
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+   // parameter ADDER_WIDTH = 8;  ... de Miguel Angel Rivera Acosta
+              //Miguel Angel Rivera Acosta
+                //11:45 a.m.
+module tb_sumador_carry;
+ 
+  parameter ADDER_WIDTH = 8; //asignacion de la variable ADDER_WIDTH
+
+  adder_intf #(ADDER_WIDTH) adder_intf_i(); // Creamos la instancia de la interface
+  bit clk;
+  always #1 clk = !clk;
+  
+ // Modulo de asser property 
+    assert property ( @(posedge clk) (adder_intf_i.a%2) == '0  |-> (adder_intf_i.result%2) == '0 );// Para test 4
+    assert property ( @(posedge clk) adder_intf_i.b >= 'h80 && adder_intf_i.a>='h80 |-> (adder_intf_i.carry_out) == '1 );// para test 4
+ //   assert property ( @(posedge clk) adder_intf_i.result >= 'hff |-> adder_intf_i.carry_out =='1);
+  
+  Sumador_carry #(ADDER_WIDTH /*Pre-synthesis*/ ) DUT (
+      .result(adder_intf_i.result), // conectamos el puerto result del DUT con la variable result de la instancia de la interface
+      .a(adder_intf_i.a),
+      .b(adder_intf_i.b),
+      .carry_out(adder_intf_i.carry_out)
+  );
+ //`define TEST1
+// `define TEST2
+// `define TEST3
+   `define TEST4
+ //`define TEST5
+  
+  `ifdef TEST1
+   // Prueba 1 - 
+    //////////////////////////////////////////////////////
+    // 1. Generar una suma de 0 -> a y radom -> b      //
+    // 2. Generar una suma (5) de 0 -> b y radom -> a //
+    /////////////////////////////////////////////////////
+    initial begin
+          // modulo de aserciones inmediatas
+          $display("\n  TEST #1");
+          adder_intf_i.add_a_zero_b_random();
+          @(posedge clk);
+          assert(adder_intf_i.a=='0);
+          $display("ADD A ZERO B RANDOM");
+          $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+
+      repeat (5) begin
+         adder_intf_i.add_b_zero_a_random();
+         @(posedge clk);
+         assert(adder_intf_i.b=='0);
+         $display("ADD B ZERO A RANDOM");
+         $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+     end
+     $finish;
+      //->TEST1_EV;
+      end
+  `endif
+ 
+   `ifdef TEST2
+   // Prueba 2 - 
+    /////////////////////////////////////////////////////////
+    // 1. Generar una suma(5) de random -> a y radom -> b //
+    // 2. Generar una suma de 0 -> b y 0 -> a              //
+    /////////////////////////////////////////////////////////
+    initial begin
+   // wait(TEST1_EV.triggered);
+    $display("\n  TEST #2");
+    adder_intf_i.add_a_b_zero();
+    @(posedge clk);
+    $display("ADD A Y B ZEROS");
+    $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+    
+    repeat(5) begin 
+    adder_intf_i.add_a_b_random();
+    @(posedge clk);
+    $display("ADD A Y B RANDOM");
+    $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+    end
+    $finish;
+   // ->TEST2_EV;
+    end
+   `endif 
+  `ifdef TEST3
+  // Prueba 3 - 
+    /////////////////////////////////////////////////////////
+    // 1. Genera un valor en a mayor que en b              //
+    // 2. Genera un valor en a menor que en b              //
+    /////////////////////////////////////////////////////////
+      initial begin 
+        //wait(TEST2_EV.triggered);
+        $display("\n  TEST #3");
+        repeat (5) begin
+            adder_intf_i.a_bigger_than_b();
+            @(posedge clk);
+            assert(adder_intf_i.a > adder_intf_i.b);
+            $display("A BIGGER THAN B");
+            $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+        end
+        
+        repeat (5) begin
+            adder_intf_i.b_bigger_than_a();
+            @(posedge clk);
+            assert(adder_intf_i.b > adder_intf_i.a);
+            $display("B BIGGER THAN A");
+            $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+        end 
+        $finish; 
+      end 
+  `endif 
+  `ifdef TEST4
+  // Prueba 4 - 
+    /////////////////////////////////////////////////////////
+    // 1. Genera valores pares                             //
+    // 2. Genera un desbordamiento en resultado            //
+    /////////////////////////////////////////////////////////
+    initial begin
+         $display("\n  TEST #4");
+         repeat (5) begin
+         adder_intf_i.par_value();
+         @(posedge clk);
+         $display("BOTH ARE PARS");
+         $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+        end
+        
+        adder_intf_i.result_overflow();
+        @(posedge clk);
+        $display("RESULT OVERFLOW");
+        $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+        $finish;
+    end
+  `endif
+  
+  `ifdef TEST5
+   // Prueba 5 - 
+    /////////////////////////////////////////////////////////
+    // 1. Genera 5 repeticiones donde b es zero y a random //
+    // 2. Genera un desbordamiento en b y un random en a   //
+    /////////////////////////////////////////////////////////
+    initial begin 
+   // wait(TEST4_EV.triggered);
+     $display("\n  TEST #5");
+      repeat (5) begin
+         adder_intf_i.add_b_zero_a_random();
+         @(posedge clk);
+         $display("ADD B ZERO A RANDOM");
+         $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+      end
+       repeat (5) begin
+            adder_intf_i.b_bigger_than_a();
+            @(posedge clk);
+            $display("B BIGGER THAN A");
+            $display("a : %b b: %b Result: %b Carry: %b",adder_intf_i.a, adder_intf_i.b, adder_intf_i.result, adder_intf_i.carry_out);
+        end 
+        $finish; 
+       end  
+  `endif
+
+   
+   endmodule: tb_sumador_carry
+
+  interface adder_intf #(parameter WIDTH = 8 /*Pre-synthesis*/ ) ();
+ //Declaracion de variable de conexion
+  logic [WIDTH-1:0] a;
+  logic [WIDTH-1:0] b;
+  logic [WIDTH-1:0] result;
+  logic carry_out;
+ 
+ //funciones
+ //This function can be used to randomized the different inputs
+  function add_a_zero_b_random(); //1
+    a = '0;
+    std::randomize(b);
+  endfunction
+  
+   function add_b_zero_a_random();
+    b = '0;
+    std::randomize(a);
+  endfunction
+  
+  function add_a_b_random();
+    std::randomize(a);
+    std::randomize(b);
+  endfunction
+  
+  function add_a_b_zero();
+    a = '0;
+    b = '0;
+   endfunction
+   
+   function a_bigger_than_b();
+      std::randomize(a) with{a>='h80; a<='hFF;};
+      std::randomize(b) with{b<a;};
+  endfunction
+  function b_bigger_than_a();
+    std::randomize(b) with{b>='h80; b<='hFF;};
+    std::randomize(a) with{a<b;};
+  endfunction
+  function par_value();
+    std::randomize(a) with{(a%2)==0;};
+    std::randomize(b) with{(b%2)==0;};
+  endfunction
+  function result_overflow();
+    std::randomize(a) with{a>='h80;};//valores random en a pero mayor a 128
+    std::randomize(b) with{b>='h80;b!=a;};//ambos mayor que 128 pero no seran iguales    
+  endfunction
+endinterface: adder_intf
